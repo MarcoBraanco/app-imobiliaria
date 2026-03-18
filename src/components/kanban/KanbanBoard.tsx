@@ -60,9 +60,6 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
     if (!container) return
 
     const rect = container.getBoundingClientRect()
-    const pointerX = (event.activatorEvent as PointerEvent | TouchEvent)
-      ? rect.left + rect.width / 2 + (event.delta?.x ?? 0)
-      : rect.left + rect.width / 2
 
     // Use the active node's projected position
     const activeRect = event.active.rect.current.translated
