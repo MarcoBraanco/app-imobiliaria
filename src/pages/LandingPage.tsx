@@ -21,7 +21,7 @@ export function LandingPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const navigate = useNavigate()
-  const { boards, loading } = useBoards()
+  const { boards, loading, error } = useBoards()
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -119,6 +119,11 @@ export function LandingPage() {
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="animate-spin text-gray-500" size={24} />
+            </div>
+          ) : error ? (
+            <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-sm">
+              <p className="text-red-400 font-medium mb-1">Erro ao carregar quadros</p>
+              <p className="text-red-300/80 text-xs break-all">{error}</p>
             </div>
           ) : boards.length === 0 ? (
             <p className="text-gray-500 text-sm text-center py-6">
