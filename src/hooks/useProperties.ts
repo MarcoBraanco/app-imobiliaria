@@ -43,14 +43,21 @@ export function useProperties(boardId: string) {
       collection(db, 'boards', boardId, 'properties'),
       orderBy('criadoEm', 'desc')
     )
-    const unsub = onSnapshot(q, (snap) => {
-      const items = snap.docs.map((d) => {
-        const data = d.data()
-        return { id: d.id, ...data, status: normalizeStatus(data.status) } as Property
-      })
-      setProperties(items)
-      setLoading(false)
-    })
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const items = snap.docs.map((d) => {
+          const data = d.data()
+          return { id: d.id, ...data, status: normalizeStatus(data.status) } as Property
+        })
+        setProperties(items)
+        setLoading(false)
+      },
+      (err) => {
+        console.error('Firestore useProperties error:', err)
+        setLoading(false)
+      }
+    )
     return unsub
   }, [boardId])
 

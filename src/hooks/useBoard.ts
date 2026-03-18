@@ -8,14 +8,21 @@ export function useBoard(boardId: string) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'boards', boardId), (snap) => {
-      if (snap.exists()) {
-        setBoard({ id: snap.id, ...snap.data() } as Board)
-      } else {
-        setBoard(null)
+    const unsub = onSnapshot(
+      doc(db, 'boards', boardId),
+      (snap) => {
+        if (snap.exists()) {
+          setBoard({ id: snap.id, ...snap.data() } as Board)
+        } else {
+          setBoard(null)
+        }
+        setLoading(false)
+      },
+      (err) => {
+        console.error('Firestore useBoard error:', err)
+        setLoading(false)
       }
-      setLoading(false)
-    })
+    )
     return unsub
   }, [boardId])
 
