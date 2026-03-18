@@ -1,7 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, BedDouble, Bath, Building2 } from 'lucide-react'
+import { MapPin, BedDouble, Bath, Building2, GripVertical } from 'lucide-react'
 import type { Property } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
 
@@ -35,13 +35,19 @@ export function KanbanCard({ property, boardId, isDragOverlay }: KanbanCardProps
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
       {...attributes}
       onClick={handleClick}
-      className={`bg-gray-800 rounded-lg border border-gray-700 p-3 space-y-2 cursor-grab active:cursor-grabbing hover:border-gray-600 transition-all duration-200 touch-none ${
+      className={`relative bg-gray-800 rounded-lg border border-gray-700 p-3 space-y-2 hover:border-gray-600 transition-all duration-200 ${
         isDragging && !isDragOverlay ? 'opacity-0 scale-95' : ''
       } ${isDragOverlay ? 'shadow-2xl shadow-black/50 rotate-1 scale-105' : ''}`}
     >
+      <button
+        {...listeners}
+        aria-label="Arrastar imóvel"
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-gray-700/80 text-gray-400 hover:text-gray-200 hover:bg-gray-600 cursor-grab active:cursor-grabbing touch-none transition-colors"
+      >
+        <GripVertical size={16} />
+      </button>
       {property.fotos.length > 0 && (
         <div className="aspect-[16/10] -mx-3 -mt-3 mb-2 overflow-hidden rounded-t-lg bg-gray-900">
           <img

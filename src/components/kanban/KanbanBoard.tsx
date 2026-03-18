@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -9,6 +9,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
+  type DragMoveEvent,
 } from '@dnd-kit/core'
 import type { Property, PropertyStatus } from '../../types'
 import { KANBAN_COLUMNS } from '../../types'
@@ -44,13 +45,44 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
     })
   }, [properties])
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
   })
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { delay: 200, tolerance: 5 },
+    activationConstraint: { delay: 300, tolerance: 10 },
   })
   const sensors = useSensors(pointerSensor, touchSensor)
+
+  const handleDragMove = useCallback((event: DragMoveEvent) => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const pointerX = (event.activatorEvent as PointerEvent | TouchEvent)
+      ? rect.left + rect.width / 2 + (event.delta?.x ?? 0)
+      : rect.left + rect.width / 2
+
+    // Use the active node's projected position
+    const activeRect = event.active.rect.current.translated
+    if (!activeRect) return
+    const activeCenter = activeRect.left + activeRect.width / 2
+
+    const edgeThreshold = 60
+    const maxScrollSpeed = 15
+
+    const distFromRight = rect.right - activeCenter
+    const distFromLeft = activeCenter - rect.left
+
+    if (distFromRight < edgeThreshold) {
+      const speed = Math.round(maxScrollSpeed * (1 - distFromRight / edgeThreshold))
+      container.scrollLeft += speed
+    } else if (distFromLeft < edgeThreshold) {
+      const speed = Math.round(maxScrollSpeed * (1 - distFromLeft / edgeThreshold))
+      container.scrollLeft -= speed
+    }
+  }, [])
 
   // Apply optimistic status overrides to properties
   const effectiveProperties = properties.map((p) =>
@@ -145,10 +177,16 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div
+        ref={scrollContainerRef}
+        className={`flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 ${
+          activeId ? '' : 'snap-x snap-mandatory'
+        }`}
+      >
         {grouped.map((col) => (
           <KanbanColumn
             key={col.status}
