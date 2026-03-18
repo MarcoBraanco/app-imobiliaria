@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, BedDouble, Bath, Building2, GripVertical } from 'lucide-react'
+import { MapPin, BedDouble, Bath, Building2, GripHorizontal } from 'lucide-react'
 import type { Property } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
 
@@ -55,7 +55,7 @@ export function KanbanCard({ property, boardId, isDragOverlay }: KanbanCardProps
         aria-label="Arrastar imóvel"
         className="flex items-center justify-center w-full h-7 sm:h-5 cursor-grab active:cursor-grabbing touch-none bg-gray-750 hover:bg-gray-700 border-b border-gray-700 transition-colors"
       >
-        <GripVertical size={14} className="text-gray-500" />
+        <GripHorizontal size={16} className="text-gray-500" />
       </button>
 
       <div className="p-3 space-y-2">
