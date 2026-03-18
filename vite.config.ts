@@ -22,7 +22,7 @@ function apiProxy(): Plugin {
             const parsed = JSON.parse(body)
 
             // Minimal adapter: VercelRequest/VercelResponse shim
-            const fakeReq = { method: 'POST', body: parsed } as never
+            const fakeReq = { method: 'POST', body: parsed } as any
             const fakeRes = {
               statusCode: 200,
               status(code: number) { this.statusCode = code; return this },
@@ -30,7 +30,7 @@ function apiProxy(): Plugin {
                 res.writeHead(this.statusCode, { 'Content-Type': 'application/json' })
                 res.end(JSON.stringify(data))
               },
-            } as never
+            } as any
 
             await handler(fakeReq, fakeRes)
           } catch (err) {
