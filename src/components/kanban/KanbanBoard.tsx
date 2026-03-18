@@ -9,7 +9,6 @@ import {
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
-  type DragMoveEvent,
 } from '@dnd-kit/core'
 import type { Property, PropertyStatus } from '../../types'
 import { KANBAN_COLUMNS } from '../../types'
@@ -46,38 +45,94 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
   }, [properties])
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const pointerXRef = useRef(0)
+  const rafIdRef = useRef<number | null>(null)
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
   })
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { delay: 300, tolerance: 10 },
+    activationConstraint: { delay: 200, tolerance: 15 },
   })
   const sensors = useSensors(pointerSensor, touchSensor)
 
-  const handleDragMove = useCallback((event: DragMoveEvent) => {
+  // JS snap-on-idle: snap to nearest column when user stops scrolling (no drag active)
+  useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
-    const rect = container.getBoundingClientRect()
+    let debounceTimer: ReturnType<typeof setTimeout>
 
-    // Use the active node's projected position
-    const activeRect = event.active.rect.current.translated
-    if (!activeRect) return
-    const activeCenter = activeRect.left + activeRect.width / 2
+    function handleScroll() {
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        if (activeId) return
+        const containerRect = container!.getBoundingClientRect()
+        const children = Array.from(container!.children) as HTMLElement[]
+        if (children.length === 0) return
 
-    const edgeThreshold = 60
-    const maxScrollSpeed = 15
+        let closestOffset = 0
+        let closestDist = Infinity
+        for (const child of children) {
+          const childRect = child.getBoundingClientRect()
+          const dist = Math.abs(childRect.left - containerRect.left)
+          if (dist < closestDist) {
+            closestDist = dist
+            closestOffset = container!.scrollLeft + (childRect.left - containerRect.left)
+          }
+        }
+        container!.scrollTo({ left: closestOffset, behavior: 'smooth' })
+      }, 150)
+    }
 
-    const distFromRight = rect.right - activeCenter
-    const distFromLeft = activeCenter - rect.left
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      clearTimeout(debounceTimer)
+    }
+  }, [activeId])
 
-    if (distFromRight < edgeThreshold) {
-      const speed = Math.round(maxScrollSpeed * (1 - distFromRight / edgeThreshold))
-      container.scrollLeft += speed
-    } else if (distFromLeft < edgeThreshold) {
-      const speed = Math.round(maxScrollSpeed * (1 - distFromLeft / edgeThreshold))
-      container.scrollLeft -= speed
+  // rAF auto-scroll during drag
+  const startAutoScroll = useCallback(() => {
+    function tick() {
+      const container = scrollContainerRef.current
+      if (!container) return
+
+      const rect = container.getBoundingClientRect()
+      const x = pointerXRef.current
+      const edgeThreshold = 60
+      const maxSpeed = 15
+
+      const distFromRight = rect.right - x
+      const distFromLeft = x - rect.left
+
+      if (distFromRight < edgeThreshold && distFromRight > 0) {
+        const speed = Math.round(maxSpeed * (1 - distFromRight / edgeThreshold))
+        container.scrollLeft += speed
+      } else if (distFromLeft < edgeThreshold && distFromLeft > 0) {
+        const speed = Math.round(maxSpeed * (1 - distFromLeft / edgeThreshold))
+        container.scrollLeft -= speed
+      }
+
+      rafIdRef.current = requestAnimationFrame(tick)
+    }
+    rafIdRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const stopAutoScroll = useCallback(() => {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current)
+      rafIdRef.current = null
+    }
+  }, [])
+
+  const handlePointerMove = useCallback((e: PointerEvent) => {
+    pointerXRef.current = e.clientX
+  }, [])
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (e.touches.length > 0) {
+      pointerXRef.current = e.touches[0].clientX
     }
   }, [])
 
@@ -95,6 +150,9 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string)
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('touchmove', handleTouchMove, { passive: true })
+    startAutoScroll()
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -114,9 +172,16 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
     }
   }
 
+  function cleanupDragListeners() {
+    stopAutoScroll()
+    document.removeEventListener('pointermove', handlePointerMove)
+    document.removeEventListener('touchmove', handleTouchMove)
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     setActiveId(null)
+    cleanupDragListeners()
 
     if (!over) {
       // Dropped outside — revert optimistic change
@@ -152,6 +217,7 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
 
   function handleDragCancel() {
     setActiveId(null)
+    cleanupDragListeners()
     // Revert all non-pending optimistic statuses
     setOptimisticStatus((prev) => {
       const next: Record<string, PropertyStatus> = {}
@@ -174,15 +240,12 @@ export function KanbanBoard({ properties, boardId, updateStatus }: KanbanBoardPr
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
-      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       <div
         ref={scrollContainerRef}
-        className={`flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 ${
-          activeId ? '' : 'snap-x snap-mandatory'
-        }`}
+        className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
       >
         {grouped.map((col) => (
           <KanbanColumn

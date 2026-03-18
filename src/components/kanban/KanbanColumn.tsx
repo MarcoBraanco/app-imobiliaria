@@ -24,7 +24,7 @@ export function KanbanColumn({ status, label, color, properties, boardId }: Kanb
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col bg-gray-900/50 rounded-xl min-w-[80vw] sm:min-w-[260px] sm:flex-1 snap-center transition-all duration-200 ${
+      className={`flex flex-col bg-gray-900/50 rounded-xl min-w-[80vw] sm:min-w-[260px] sm:flex-1 transition-all duration-200 ${
         isOver ? 'ring-2 ring-blue-500/40 bg-gray-900/70' : ''
       }`}
     >
