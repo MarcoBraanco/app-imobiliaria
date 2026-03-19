@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Send } from 'lucide-react'
 import type { Comment } from '../../types'
 import { formatDate } from '../../lib/formatters'
-import { useNickname } from '../../hooks/useNickname'
-import { NicknamePrompt } from './NicknamePrompt'
+import { useUser } from '../../contexts/UserContext'
+import { UserSelector } from './UserSelector'
 
 interface CommentSectionProps {
   comments: Comment[]
@@ -13,22 +13,37 @@ interface CommentSectionProps {
 export function CommentSection({ comments, onAddComment }: CommentSectionProps) {
   const [texto, setTexto] = useState('')
   const [sending, setSending] = useState(false)
-  const { hasNickname } = useNickname()
-  const [showNickname, setShowNickname] = useState(false)
+  const { hasUser } = useUser()
+  const [showSelector, setShowSelector] = useState(false)
+  const pendingSubmit = useRef(false)
+
+  async function submitComment() {
+    if (!texto.trim()) return
+    setSending(true)
+    await onAddComment(texto.trim())
+    setTexto('')
+    setSending(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!texto.trim()) return
 
-    if (!hasNickname) {
-      setShowNickname(true)
+    if (!hasUser) {
+      pendingSubmit.current = true
+      setShowSelector(true)
       return
     }
 
-    setSending(true)
-    await onAddComment(texto.trim())
-    setTexto('')
-    setSending(false)
+    await submitComment()
+  }
+
+  function handleUserSelected() {
+    setShowSelector(false)
+    if (pendingSubmit.current) {
+      pendingSubmit.current = false
+      submitComment()
+    }
   }
 
   return (
@@ -71,8 +86,8 @@ export function CommentSection({ comments, onAddComment }: CommentSectionProps) 
         </button>
       </form>
 
-      {showNickname && (
-        <NicknamePrompt onDone={() => setShowNickname(false)} />
+      {showSelector && (
+        <UserSelector onDone={handleUserSelected} />
       )}
     </div>
   )

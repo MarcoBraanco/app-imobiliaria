@@ -2,10 +2,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Header } from '../components/layout/Header'
 import { PropertyForm } from '../components/property/PropertyForm'
-import { NicknamePrompt } from '../components/collaboration/NicknamePrompt'
+import { UserSelector } from '../components/collaboration/UserSelector'
 import { useBoard } from '../hooks/useBoard'
 import { useProperties } from '../hooks/useProperties'
-import { useNickname } from '../hooks/useNickname'
+import { useUser } from '../contexts/UserContext'
 import type { PropertyFormData } from '../lib/schema'
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -15,8 +15,8 @@ export function AddPropertyPage() {
   const navigate = useNavigate()
   const { board } = useBoard(boardId!)
   const { addProperty } = useProperties(boardId!)
-  const { hasNickname } = useNickname()
-  const [showNickname, setShowNickname] = useState(!hasNickname)
+  const { hasUser } = useUser()
+  const [showSelector, setShowSelector] = useState(!hasUser)
 
   async function handleSubmit(data: PropertyFormData) {
     await addProperty(data)
@@ -42,8 +42,8 @@ export function AddPropertyPage() {
         <PropertyForm onSubmit={handleSubmit} />
       </main>
 
-      {showNickname && (
-        <NicknamePrompt onDone={() => setShowNickname(false)} />
+      {showSelector && (
+        <UserSelector onDone={() => setShowSelector(false)} />
       )}
     </div>
   )
