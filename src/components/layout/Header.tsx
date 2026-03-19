@@ -34,7 +34,7 @@ export function Header({ boardName }: HeaderProps) {
             )}
             <Link to={boardId ? `/b/${boardId}` : '/'} className="flex items-center gap-2 font-bold text-lg">
               <Home size={20} />
-              <span className="hidden sm:inline">{boardName || 'Busca Imóveis'}</span>
+              <span className="hidden sm:inline">{boardName || 'Branares - Imóveis'}</span>
             </Link>
           </div>
 

@@ -50,10 +50,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: 'Busca Imóveis',
-        short_name: 'Imóveis',
+        name: 'Branares - Imóveis',
+        short_name: 'Branares',
         description: 'Busca colaborativa de apartamentos para alugar',
         lang: 'pt-BR',
         theme_color: '#2563eb',

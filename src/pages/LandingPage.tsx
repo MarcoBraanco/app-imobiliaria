@@ -78,7 +78,7 @@ export function LandingPage() {
       <div className="flex-1 flex flex-col items-center px-4 py-12">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-100 mb-3">
-            Busca Imóveis
+            Branares - Imóveis
           </h1>
           <p className="text-gray-400 text-lg max-w-md">
             Compare apartamentos para alugar de forma colaborativa
