@@ -2,9 +2,10 @@ import { useRef, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, BedDouble, Bath, Building2, GripHorizontal } from 'lucide-react'
+import { MapPin, BedDouble, Bath, Building2, GripHorizontal, MessageCircle } from 'lucide-react'
 import type { Property } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
+import { useCommentCount } from '../../hooks/useCommentCount'
 
 interface KanbanCardProps {
   property: Property
@@ -26,6 +27,7 @@ export function KanbanCard({ property, boardId, isDragOverlay }: KanbanCardProps
     }
   }, [isDragging])
 
+  const commentCount = useCommentCount(boardId, property.id)
   const custoTotal = property.aluguel + property.condominio + property.iptu
 
   const style = transform
@@ -92,12 +94,20 @@ export function KanbanCard({ property, boardId, isDragOverlay }: KanbanCardProps
           </span>
         </div>
 
-        {property.imobiliaria && (
-          <div className="flex items-center gap-1 text-gray-400 text-xs">
-            <Building2 size={12} />
-            <span className="truncate">{property.imobiliaria}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          {property.imobiliaria && (
+            <span className="flex items-center gap-1 truncate">
+              <Building2 size={12} />
+              {property.imobiliaria}
+            </span>
+          )}
+          {commentCount > 0 && (
+            <span className="flex items-center gap-1 text-blue-400 ml-auto">
+              <MessageCircle size={12} />
+              {commentCount}
+            </span>
+          )}
+        </div>
 
         <div className="pt-1.5 border-t border-gray-700 space-y-1">
           <div className="flex items-baseline justify-between">

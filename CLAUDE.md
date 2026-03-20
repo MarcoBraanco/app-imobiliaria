@@ -44,8 +44,9 @@ D:/Projeto - App imoveis/
 │   │   │   ├── PropertyForm.tsx     # Formulário com validação zod + importação automática via URL (Lago/Pirâmide)
 │   │   │   ├── PropertyFilters.tsx  # Filtros (status, bairro, preço, quartos) + ordenação
 │   │   │   └── StatusBadge.tsx      # Badge colorido (Interessado/Agendar Visita/Visitado/Descartado)
+│   │   ├── ui/                    # (reservado para componentes UI genéricos)
 │   │   └── collaboration/
-│   │       ├── NicknamePrompt.tsx   # Modal para definir nickname (localStorage)
+│   │       ├── UserSelector.tsx    # Modal para selecionar usuário de lista predefinida (Marco/Natália)
 │   │       ├── ReactionBar.tsx      # Botões like/dislike/star com contagem
 │   │       └── CommentSection.tsx   # Lista de comentários + formulário de envio
 │   ├── pages/
@@ -54,17 +55,19 @@ D:/Projeto - App imoveis/
 │   │   ├── AddPropertyPage.tsx  # Formulário para adicionar imóvel
 │   │   ├── EditPropertyPage.tsx # Formulário para editar imóvel existente (reutiliza PropertyForm)
 │   │   └── PropertyPage.tsx     # Detalhe do imóvel + comentários + reações + status + lightbox de fotos
+│   ├── contexts/
+│   │   └── UserContext.tsx      # React Context para estado do usuário (nickname via UserSelector)
 │   ├── hooks/
 │   │   ├── useBoard.ts          # onSnapshot no documento do quadro
 │   │   ├── useBoards.ts         # Lista todos os quadros (real-time) para a LandingPage
 │   │   ├── useProperties.ts     # CRUD completo + real-time listener na subcollection
 │   │   ├── useComments.ts       # Adicionar + listar comentários real-time
-│   │   ├── useReactions.ts      # Toggle like/dislike/star por visitorId
-│   │   └── useNickname.ts       # Gerencia nickname no localStorage
+│   │   └── useReactions.ts      # Toggle like/dislike/star por visitorId
 │   ├── lib/
 │   │   ├── firebase.ts          # initializeApp + getFirestore (config via env vars)
 │   │   ├── schema.ts            # Schemas zod para validação (propertySchema, boardSchema)
 │   │   ├── formatters.ts        # formatCurrency (centavos→BRL), parseCurrency, formatDate
+│   │   ├── users.ts             # Lista fixa de usuários do app (USERS: AppUser[]) — Marco e Natália
 │   │   └── visitor.ts           # getVisitorId e getNickname/setNickname (localStorage)
 │   ├── types/
 │   │   └── index.ts             # Interfaces: Board, Property, Comment, Reaction + KANBAN_COLUMNS config
@@ -107,7 +110,7 @@ titulo, codigoImovel, bairro, endereco: string
 aluguel, condominio, iptu: number (em centavos)
 quartos, banheiros: number
 area: number | null (m²)
-imobiliaria, linkAnuncio, observacoes: string
+imobiliaria, linkAnuncio, observacoes, descricao: string
 fotos: string[] (URLs externas)
 status: "interessado" | "agendar_visita" | "visitado" | "descartado"
 adicionadoPor: string (nickname)
@@ -157,7 +160,7 @@ O hook `useProperties` normaliza status antigos no read-time: `novo` e `favorito
 
 ### Identificação sem Login
 - **visitorId**: nanoid de 12 chars salvo no localStorage, usado para controlar reações (evitar duplicatas)
-- **nickname**: nome definido pelo usuário no NicknamePrompt, salvo no localStorage, usado em comentários e ao adicionar imóveis
+- **nickname**: selecionado pelo usuário no UserSelector (lista fixa: Marco, Natália), salvo no localStorage via UserContext, usado em comentários e ao adicionar imóveis. O UserSelector é exibido como modal ao entrar em páginas que precisam de identificação (AddPropertyPage, CommentSection).
 
 ### Real-time
 Todos os hooks usam `onSnapshot` do Firestore para sincronização instantânea entre usuários. Quando alguém adiciona um imóvel ou comentário, todos com o quadro aberto veem imediatamente.

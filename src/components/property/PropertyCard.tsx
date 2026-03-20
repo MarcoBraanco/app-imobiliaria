@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { MapPin, BedDouble, Bath, Ruler, Building2 } from 'lucide-react'
+import { MapPin, BedDouble, Bath, Ruler, Building2, MessageCircle } from 'lucide-react'
 import type { Property } from '../../types'
 import { formatCurrency } from '../../lib/formatters'
 import { StatusBadge } from './StatusBadge'
+import { useCommentCount } from '../../hooks/useCommentCount'
 
 interface PropertyCardProps {
   property: Property
@@ -10,6 +11,7 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, boardId }: PropertyCardProps) {
+  const commentCount = useCommentCount(boardId, property.id)
   const custoTotal = property.aluguel + property.condominio + property.iptu
 
   return (
@@ -61,6 +63,12 @@ export function PropertyCard({ property, boardId }: PropertyCardProps) {
             <span className="flex items-center gap-1">
               <Building2 size={14} />
               <span className="truncate max-w-[80px]">{property.imobiliaria}</span>
+            </span>
+          )}
+          {commentCount > 0 && (
+            <span className="flex items-center gap-1 text-blue-400">
+              <MessageCircle size={14} />
+              {commentCount}
             </span>
           )}
         </div>

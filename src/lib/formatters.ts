@@ -13,5 +13,11 @@ export function parseCurrency(value: string): number {
 }
 
 export function formatDate(timestamp: { seconds: number }): string {
-  return new Date(timestamp.seconds * 1000).toLocaleDateString('pt-BR')
+  return new Date(timestamp.seconds * 1000).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
