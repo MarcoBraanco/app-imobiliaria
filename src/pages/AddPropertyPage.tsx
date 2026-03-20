@@ -39,7 +39,7 @@ export function AddPropertyPage() {
           Adicionar Imóvel
         </h2>
 
-        <PropertyForm onSubmit={handleSubmit} />
+        <PropertyForm onSubmit={handleSubmit} boardId={boardId} />
       </main>
 
       {showSelector && (

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 import { propertySchema, type PropertyFormData } from '../../lib/schema'
 import { Link2, Loader2 } from 'lucide-react'
 
@@ -8,15 +10,41 @@ interface PropertyFormProps {
   onSubmit: (data: PropertyFormData) => Promise<void>
   defaultValues?: Partial<PropertyFormData>
   submitLabel?: string
+  boardId?: string
 }
 
 const inputClass =
   'w-full border border-gray-600 bg-gray-700 text-gray-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500'
 
+async function logScrapeAttempt(params: {
+  url: string
+  success: boolean
+  error?: string
+  errorType?: string
+  statusCode?: number
+  boardId?: string
+}) {
+  try {
+    await addDoc(collection(db, 'scrape_logs'), {
+      url: params.url,
+      success: params.success,
+      error: params.error || null,
+      errorType: params.errorType || null,
+      statusCode: params.statusCode || null,
+      boardId: params.boardId || null,
+      userAgent: navigator.userAgent,
+      criadoEm: serverTimestamp(),
+    })
+  } catch {
+    // Logging failure should never block the user
+  }
+}
+
 export function PropertyForm({
   onSubmit,
   defaultValues,
   submitLabel = 'Adicionar Imóvel',
+  boardId,
 }: PropertyFormProps) {
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
@@ -56,25 +84,39 @@ export function PropertyForm({
     setIsImporting(true)
     setImportError('')
 
+    const url = importUrl.trim()
+    const fetchOpts: RequestInit = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    }
+
     try {
-      const res = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: importUrl.trim() }),
-      })
+      let res: Response
+      try {
+        res = await fetch('/api/scrape', fetchOpts)
+      } catch {
+        // Retry once — mobile network failures are often transient
+        res = await fetch('/api/scrape', fetchOpts)
+      }
 
       const data = await res.json()
 
       if (!res.ok) {
-        setImportError(data.error || 'Erro ao importar dados')
+        const error = data.error || 'Erro ao importar dados'
+        setImportError(error)
+        logScrapeAttempt({ url, success: false, error, errorType: data.errorType, statusCode: res.status, boardId })
         return
       }
 
       const currentTitulo = getValues('titulo')
       const { titulo: _t, ...importData } = data
       reset({ ...importData, titulo: currentTitulo })
+      logScrapeAttempt({ url, success: true, boardId })
     } catch {
-      setImportError('Erro de conexão. Tente novamente.')
+      const error = 'Erro de conexão. Verifique sua internet e tente novamente.'
+      setImportError(error)
+      logScrapeAttempt({ url, success: false, error, errorType: 'client_network', boardId })
     } finally {
       setIsImporting(false)
     }

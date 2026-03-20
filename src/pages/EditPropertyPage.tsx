@@ -75,6 +75,7 @@ export function EditPropertyPage() {
           onSubmit={handleSubmit}
           defaultValues={defaultValues}
           submitLabel="Salvar Alterações"
+          boardId={boardId}
         />
       </main>
     </div>

@@ -257,12 +257,23 @@ export default async function handler(
   }
 
   try {
-    const response = await fetch(url, { headers: BROWSER_HEADERS })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
+
+    const response = await fetch(url, {
+      headers: BROWSER_HEADERS,
+      signal: controller.signal,
+      redirect: 'follow',
+    })
+    clearTimeout(timeout)
 
     if (!response.ok) {
       return res
         .status(502)
-        .json({ error: `Erro ao acessar o site: ${response.status}` })
+        .json({
+          error: `Erro ao acessar o site: ${response.status}`,
+          errorType: 'http_error',
+        })
     }
 
     const html = await response.text()
@@ -270,9 +281,26 @@ export default async function handler(
 
     return res.status(200).json(data)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erro desconhecido'
+    let errorType = 'network'
+    let message = 'Erro desconhecido'
+
+    if (err instanceof Error) {
+      message = err.message
+      if (err.name === 'AbortError') {
+        errorType = 'timeout'
+        message = 'O site demorou demais para responder (timeout 8s)'
+      } else if (
+        message.includes('fetch failed') ||
+        message.includes('ECONNREFUSED') ||
+        message.includes('ENOTFOUND')
+      ) {
+        errorType = 'network'
+        message = `Não foi possível conectar ao site (${message})`
+      }
+    }
+
     return res
       .status(502)
-      .json({ error: `Falha ao importar dados: ${message}` })
+      .json({ error: message, errorType })
   }
 }
